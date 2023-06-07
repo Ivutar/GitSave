@@ -26,12 +26,12 @@ public class MainWindowViewModel : ReactiveObject
         IObservable<bool> canExecuteNewCommand = this.WhenAnyValue(vm => vm.NewComment, (comment) => !string.IsNullOrEmpty(comment));
         IObservable<bool> canExecuteUpdateCommand = this.WhenAnyValue(vm => vm.LastComment, (comment) => !string.IsNullOrEmpty(comment));
 
-        NewCommand = ReactiveCommand.Create(OnNew, canExecuteNewCommand);
-        RefreshCommand = ReactiveCommand.Create(OnRefresh);
-        UpdateCommand = ReactiveCommand.Create(OnUpdate, canExecuteUpdateCommand);
-        ResetCommand = ReactiveCommand.Create(OnReset);
-        SetWorkFolderCommand = ReactiveCommand.Create(OnSetWorkFolder);
-        ResetToCommit = ReactiveCommand.Create(OnResetToCommit);
+        NewCommand = ReactiveCommand.Create(NewImpl, canExecuteNewCommand);
+        RefreshCommand = ReactiveCommand.Create(RefreshImpl);
+        UpdateCommand = ReactiveCommand.Create(UpdateImpl, canExecuteUpdateCommand);
+        ResetCommand = ReactiveCommand.Create(ResetImpl);
+        SetWorkFolderCommand = ReactiveCommand.Create(SetWorkFolderImpl);
+        ResetToCommit = ReactiveCommand.Create(ResetToCommitImpl);
 
         this
             .WhenAnyValue(
@@ -41,9 +41,24 @@ public class MainWindowViewModel : ReactiveObject
             .Throttle(TimeSpan.FromSeconds(0.8))
             .DistinctUntilChanged()
             .ObserveOn(RxApp.MainThreadScheduler)
-            .Subscribe(async _ => await LoadCommits());
+            .Subscribe(async _ => await LoadCommits()); //todo: as command ?
+
+        _HasUpdates = Observable
+            .Interval(TimeSpan.FromSeconds(0.8))
+            .Select(_ => Observable.FromAsync(async () => await CheckUpdatesImpl()))
+            .Concat()
+            .DistinctUntilChanged()
+            .ObserveOn(RxApp.MainThreadScheduler)
+            .ToProperty(this, x => x.HasUpdates);
 
         WorkFolder = Directory.GetCurrentDirectory();
+    }
+
+    public IObservable<R> SelectAsync<T,R>(IObservable<T> source, Func<T,Task<R>> asyncSelector)
+    {
+        return source
+            .Select(value => Observable.FromAsync(() => asyncSelector(value)))
+            .Concat();
     }
 
     #region [ Properties ]
@@ -83,15 +98,15 @@ public class MainWindowViewModel : ReactiveObject
         set => this.RaiseAndSetIfChanged(ref _WorkFolder, value);
     }
 
-    //private readonly ObservableAsPropertyHelper<bool> _ShowAllCommits;
-    //public bool ShowAllCommits => _ShowAllCommits.Value;
-
     private bool _ShowAllCommits;
     public bool ShowAllCommits
     {
         get => _ShowAllCommits;
         set => this.RaiseAndSetIfChanged(ref _ShowAllCommits, value);
     }
+
+    private readonly ObservableAsPropertyHelper<bool> _HasUpdates;
+    public bool HasUpdates => _HasUpdates.Value;
 
     public ObservableCollection<Commit> Commits { get; } = new ObservableCollection<Commit>();
 
@@ -110,20 +125,25 @@ public class MainWindowViewModel : ReactiveObject
 
     #region [ Helpers ]
 
-    public async Task OnNew()
+    async Task<bool> CheckUpdatesImpl()
+    {        
+        return await Git.HasUpates(WorkFolder);
+    }
+
+    async Task NewImpl()
     {
         await Git.New(NewComment, WorkFolder);
         await LoadCommits();
         NewComment = "";
     }
     
-    public async Task OnRefresh()
+    async Task RefreshImpl()
     {
         await LoadCommits();
         NewComment = "";
     }
 
-    public async Task OnUpdate()
+    async Task UpdateImpl()
     {
         NewComment = "";
         await Git.Update(LastComment, WorkFolder);
@@ -131,14 +151,14 @@ public class MainWindowViewModel : ReactiveObject
         await LoadCommits();
     }
 
-    public async Task OnReset()
+    async Task ResetImpl()
     {
         await Git.Reset(WorkFolder);
         NewComment = "";
         LastComment = await Git.LastComment(WorkFolder);
     }
 
-    public async Task OnSetWorkFolder()
+    async Task SetWorkFolderImpl()
     {
         OpenFolderDialog dialog = new OpenFolderDialog
         {
@@ -152,7 +172,7 @@ public class MainWindowViewModel : ReactiveObject
         }
     }
 
-    public async Task OnResetToCommit()
+    async Task ResetToCommitImpl()
     {        
 
         if (Avalonia.Application.Current.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)

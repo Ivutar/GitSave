@@ -125,4 +125,15 @@ public static class Git
 
     #endregion
 
+    #region [ status ]
+
+    //const string GitLastFullComment = "git status";
+
+    public static async Task<bool> HasUpates(string root)
+    {
+        //...
+        return false;
+    }
+
+    #endregion
 }
