@@ -49,9 +49,9 @@ public class MainWindowViewModel : ReactiveObject
 
         NewCommand = ReactiveCommand.Create(NewImpl, canExecuteNewCommand);
         UpdateCommand = ReactiveCommand.Create(UpdateImpl, canExecuteUpdateCommand);
-        ResetCommand = ReactiveCommand.Create(ResetImpl);
+        ResetCommand = ReactiveCommand.Create(ResetImpl, canExecuteResetCommand);
         SetWorkFolderCommand = ReactiveCommand.Create(SetWorkFolderImpl);
-        ResetToCommit = ReactiveCommand.Create(ResetToCommitImpl, canExecuteResetCommand);
+        ResetToCommit = ReactiveCommand.Create(ResetToCommitImpl);
 
         WorkFolder = Directory.GetCurrentDirectory();
     }

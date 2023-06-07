@@ -16,7 +16,7 @@
                     HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
                     Grid.Row="0" Grid.Column="0">
                     <Button Grid.Row="0" Command="{Binding NewCommand}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Content="New (ctrl+N)" HotKey="Ctrl+N" />
-                    <TextBlock Grid.Row="2" Text="Есть изменения" IsVisible="{Binding !HasUpdates}" />
+                    <TextBlock Grid.Row="2" IsVisible="{Binding HasUpdates}">Есть изменения</TextBlock>
                 </Grid>
                 <TextBox Text="{Binding NewComment}" Margin="4,0,0,0" AcceptsReturn="True" TextWrapping="Wrap" Grid.Row="0" Grid.Column="1"/>
 

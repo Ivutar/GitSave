@@ -131,7 +131,7 @@ public static class Git
 
     public static async Task<bool> HasUpates(string root)
     {        
-        return string.IsNullOrWhiteSpace(await Cmd.Run(GitStatus, root));
+        return !string.IsNullOrWhiteSpace(await Cmd.Run(GitStatus, root));
     }
 
     #endregion
