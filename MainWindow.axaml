@@ -12,11 +12,11 @@
 
             <Grid ColumnDefinitions="150, *" RowDefinitions="*, 6, *" Margin="0,0,0,6" ShowGridLines="False">
                 <!-- Новый коммит -->
-                <Grid RowDefinitions="*, 4, Auto"
+                <Grid RowDefinitions="*, 4, 20"
                     HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
                     Grid.Row="0" Grid.Column="0">
                     <Button Grid.Row="0" Command="{Binding NewCommand}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Content="New (ctrl+N)" HotKey="Ctrl+N" />
-                    <Button Grid.Row="2" Command="{Binding RefreshCommand}" HorizontalAlignment="Stretch" Content="Refresh (F5)" HotKey="F5" />
+                    <TextBlock Grid.Row="2" Text="Есть изменения" IsVisible="{Binding !HasUpdates}" />
                 </Grid>
                 <TextBox Text="{Binding NewComment}" Margin="4,0,0,0" AcceptsReturn="True" TextWrapping="Wrap" Grid.Row="0" Grid.Column="1"/>
 

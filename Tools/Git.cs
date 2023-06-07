@@ -127,12 +127,11 @@ public static class Git
 
     #region [ status ]
 
-    //const string GitLastFullComment = "git status";
+    const string GitStatus = "git status -s";
 
     public static async Task<bool> HasUpates(string root)
-    {
-        //...
-        return false;
+    {        
+        return string.IsNullOrWhiteSpace(await Cmd.Run(GitStatus, root));
     }
 
     #endregion

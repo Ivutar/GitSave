@@ -23,16 +23,7 @@ public class MainWindowViewModel : ReactiveObject
 {
     public MainWindowViewModel()
     {
-        IObservable<bool> canExecuteNewCommand = this.WhenAnyValue(vm => vm.NewComment, (comment) => !string.IsNullOrEmpty(comment));
-        IObservable<bool> canExecuteUpdateCommand = this.WhenAnyValue(vm => vm.LastComment, (comment) => !string.IsNullOrEmpty(comment));
-
-        NewCommand = ReactiveCommand.Create(NewImpl, canExecuteNewCommand);
-        RefreshCommand = ReactiveCommand.Create(RefreshImpl);
-        UpdateCommand = ReactiveCommand.Create(UpdateImpl, canExecuteUpdateCommand);
-        ResetCommand = ReactiveCommand.Create(ResetImpl);
-        SetWorkFolderCommand = ReactiveCommand.Create(SetWorkFolderImpl);
-        ResetToCommit = ReactiveCommand.Create(ResetToCommitImpl);
-
+        //перезагружать список коммитов при изменении параметров списка (кол-во, показывать скрытые)
         this
             .WhenAnyValue(
                 vm => vm.ShowAllCommits,
@@ -41,15 +32,26 @@ public class MainWindowViewModel : ReactiveObject
             .Throttle(TimeSpan.FromSeconds(0.8))
             .DistinctUntilChanged()
             .ObserveOn(RxApp.MainThreadScheduler)
-            .Subscribe(async _ => await LoadCommits()); //todo: as command ?
+            .Subscribe(async _ => await LoadCommits());
 
+        //отслеживание появления изменений в сохраненных файлах
         _HasUpdates = Observable
-            .Interval(TimeSpan.FromSeconds(0.8))
+            .Interval(TimeSpan.FromSeconds(2))
             .Select(_ => Observable.FromAsync(async () => await CheckUpdatesImpl()))
             .Concat()
             .DistinctUntilChanged()
             .ObserveOn(RxApp.MainThreadScheduler)
             .ToProperty(this, x => x.HasUpdates);
+
+        var canExecuteNewCommand = this.WhenAnyValue(vm => vm.NewComment, (comment) => !string.IsNullOrEmpty(comment));
+        var canExecuteUpdateCommand = this.WhenAnyValue(vm => vm.LastComment, (comment) => !string.IsNullOrEmpty(comment));
+        var canExecuteResetCommand = this.WhenAnyValue(vm => vm.HasUpdates);
+
+        NewCommand = ReactiveCommand.Create(NewImpl, canExecuteNewCommand);
+        UpdateCommand = ReactiveCommand.Create(UpdateImpl, canExecuteUpdateCommand);
+        ResetCommand = ReactiveCommand.Create(ResetImpl);
+        SetWorkFolderCommand = ReactiveCommand.Create(SetWorkFolderImpl);
+        ResetToCommit = ReactiveCommand.Create(ResetToCommitImpl, canExecuteResetCommand);
 
         WorkFolder = Directory.GetCurrentDirectory();
     }
@@ -115,7 +117,6 @@ public class MainWindowViewModel : ReactiveObject
     #region [ Commands ]
 
     public ICommand NewCommand { get; }
-    public ICommand RefreshCommand { get; }
     public ICommand UpdateCommand { get; }
     public ICommand ResetCommand { get; }
     public ICommand SetWorkFolderCommand { get; }
@@ -136,18 +137,11 @@ public class MainWindowViewModel : ReactiveObject
         await LoadCommits();
         NewComment = "";
     }
-    
-    async Task RefreshImpl()
-    {
-        await LoadCommits();
-        NewComment = "";
-    }
 
     async Task UpdateImpl()
     {
         NewComment = "";
         await Git.Update(LastComment, WorkFolder);
-        //Commits[0].Comment = LastComment;
         await LoadCommits();
     }
 
